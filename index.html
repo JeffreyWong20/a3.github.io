@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A³: Analytical Low-Rank Approximation Framework for Attention</title>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro|Caveat">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="./static/js/index.js" defer></script>
+
+  <!-- MathJax for rendering math -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" defer></script>
+</head>
+
+<body>
+
+<!-- ===================== TITLE ===================== -->
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+
+          <h1 class="title is-1 publication-title">
+            A<sup>3</sup>: an <u>A</u>nalytical Low-Rank <u>A</u>pproximation Framework for <u>A</u>ttention
+          </h1>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              Jeffrey T.H. Wong<sup>*</sup>,
+            </span>
+            <span class="author-block">
+              Cheng Zhang<sup>*</sup>,
+            </span>
+            <span class="author-block">
+              Xinye Cao,
+            </span>
+            <span class="author-block">
+              Pedro Gimenes,
+            </span>
+            <span class="author-block">
+              Christos-Savvas Bouganis,
+            </span>
+            <span class="author-block">
+              George Anthony Constantinides,
+            </span>
+            <span class="author-block">
+              Wayne Luk,
+            </span>
+            <span class="author-block">
+              Yiren Zhao
+            </span>
+          </div>
+
+          <div class="is-size-5 publication-authors" style="margin-top:6px;">
+            <div>
+              <span class="author-block">Department of Electrical and Electronic Engineering, Imperial College London</span>
+            </div>
+            <div style="margin-top:4px;">
+              <span class="author-block" style="font-size:0.85rem; color:#666;">* Equal contribution</span>
+            </div>
+            <div style="margin-top:8px;">
+              <span class="venue-tag">ICML 2026</span>
+            </div>
+          </div>
+
+          <div class="column has-text-centered" style="margin-top:18px;">
+            <div class="publication-links">
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2505.12942" class="button is-rounded is-dark" target="_blank">
+                  <i class="fas fa-file-pdf"></i>&nbsp; Paper
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="#" class="button is-rounded is-dark" target="_blank">
+                  <i class="fab fa-github"></i>&nbsp; Code
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="#abstract" class="button is-rounded is-light">
+                  <i class="fas fa-book-open"></i>&nbsp; TL;DR
+                </a>
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ===================== /TITLE ===================== -->
+
+
+<!-- ===================== COMING SOON ===================== -->
+<section class="section" style="padding: 60px 24px 80px;">
+  <div class="container is-max-desktop has-text-centered">
+    <div style="
+      border: 2px dashed #ddd;
+      border-radius: 16px;
+      padding: 56px 40px;
+      background: #fafafa;
+    ">
+      <p style="font-size: 4rem; line-height:1; margin-bottom: 20px;">🚧</p>
+      <h2 class="title is-3" style="margin-bottom: 12px;">Full website coming soon</h2>
+      <p class="is-size-5" style="color: #555; max-width: 480px; margin: 0 auto 28px;">
+        The paper is available on arXiv. The full project page with method details,
+        experiments, and code is on its way.
+      </p>
+      <a href="https://arxiv.org/abs/2505.12942" class="button is-rounded is-dark is-medium" target="_blank">
+        <i class="fas fa-file-pdf"></i>&nbsp; Read the Paper
+      </a>
+    </div>
+  </div>
+</section>
+<!-- ===================== /COMING SOON ===================== -->
+
+
+<!-- ===================== ABSTRACT ===================== -->
+<!--
+<section class="section" id="abstract">
+  <div class="container is-max-desktop">
+    <h2>TL;DR</h2>
+    <div class="section-divider"></div>
+    <div class="abstract-box is-size-5">
+      <p>
+        Large language models have demonstrated remarkable performance; however, their massive
+        parameter counts make deployment highly expensive. Low-rank approximation offers a
+        promising compression solution, yet existing approaches have two main limitations:
+        (1) They focus on minimizing the output error of <em>individual linear layers</em>,
+        without considering the architectural characteristics of Transformers, and
+        (2) they decompose a large weight matrix into two small low-rank matrices, introducing
+        runtime overhead such as extra GEMM kernel launches.
+      </p>
+      <br>
+      <p>
+        To address these limitations, we propose <strong>A<sup>3</sup></strong>, a post-training
+        low-rank approximation framework. A<sup>3</sup> splits a Transformer layer into three
+        functional components—<span class="pill pill-qk">QK</span>,
+        <span class="pill pill-ov">OV</span>,
+        <span class="pill pill-mlp">MLP</span>—and provides
+        <strong>analytical solutions</strong> that reduce the hidden dimension inside each
+        component while minimizing the component's functional loss. This directly reduces model
+        sizes, KV cache sizes, and FLOPs without introducing any runtime overhead.
+      </p>
+      <br>
+      <p>
+        Through extensive experiments, we show that A<sup>3</sup> maintains superior performance
+        compared to SoTAs. For example, our low-rank approximated LLaMA 3.1-70B achieves a
+        perplexity of <strong>4.69</strong> on WikiText-2, outperforming the previous SoTA's
+        7.87 by <strong>3.18</strong>.
+      </p>
+    </div>
+  </div>
+</section>
+<!-- ===================== /ABSTRACT ===================== -->
+
+
+<!-- ===================== KEY RESULT ===================== -->
+<section class="section" style="padding-top:0;">
+  <div class="container is-max-desktop">
+    <div class="key-result-box is-size-5">
+      <strong>Key Result:</strong> Under the same reduction budget in computation and memory,
+      A<sup>3</sup> on LLaMA 3.1-70B achieves WikiText-2 perplexity of
+      <strong>4.69</strong> vs. previous SoTA's 7.87 — a 58.6% reduction in perplexity error.
+    </div>
+  </div>
+</section>
+<!-- ===================== /KEY RESULT ===================== -->
+
+
+<!-- ===================== METHOD ===================== -->
+<section class="teaser" id="method">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="hero-body" style="width:100%;">
+
+        <h2>Method Overview</h2>
+        <div class="section-divider"></div>
+
+        <p class="is-size-5" style="text-align:justify; margin-bottom:24px;">
+          Most prior low-rank methods target <em>individual linear layers</em>, optimizing weight
+          reconstruction without regard to the Transformer's functional structure. A<sup>3</sup>
+          instead decomposes each Transformer layer into three components and derives closed-form
+          optimal solutions for each:
+        </p>
+
+        <ul class="is-size-5" style="text-align:left; margin: 0 auto 24px auto; max-width:640px;">
+          <li>
+            <span class="pill pill-qk">QK</span>
+            <strong>A<sup>3</sup>-QK</strong>: minimizes pre-softmax attention score error by
+            reducing the query/key head dimension.
+          </li>
+          <li style="margin-top:8px;">
+            <span class="pill pill-ov">OV</span>
+            <strong>A<sup>3</sup>-OV</strong>: minimizes per-head attention output error by
+            reducing the value/output head dimension.
+          </li>
+          <li style="margin-top:8px;">
+            <span class="pill pill-mlp">MLP</span>
+            <strong>A<sup>3</sup>-MLP</strong>: minimizes MLP output error via CUR decomposition,
+            reducing the intermediate size.
+          </li>
+        </ul>
+
+        <div class="content">
+          <figure>
+            <img src="./static/images/method-overview.png" alt="A3 method overview diagram">
+            <figcaption class="method-caption">
+              <strong>Overview of A<sup>3</sup>.</strong> A Transformer layer is decomposed into
+              three components: <span class="highlight-qk">QK</span>,
+              <span class="highlight-ov">OV</span>, and
+              <span class="highlight-mlp">MLP</span>. For each component, A<sup>3</sup> derives
+              an analytical solution that reduces the hidden dimension (head dimension or intermediate
+              size) while minimizing the component's functional loss. This results in reduced model
+              size, KV cache, and FLOPs with no runtime overhead—unlike classical low-rank methods
+              that introduce extra GEMM operations.
+            </figcaption>
+          </figure>
+        </div>
+
+        <!-- Foldable component details -->
+        <div class="component-accordion" style="margin-top:28px; text-align:left;">
+
+          <!-- QK -->
+          <details class="component-detail component-detail-qk">
+            <summary>
+              <span class="comp-icon">QK</span>
+              <span>
+                <span class="comp-label" style="font-weight:800; font-size:1.05rem;">A<sup>3</sup>-QK</span>
+                <span style="color:#555; font-weight:400; margin-left:8px;">Query-Key Attention Score Approximation</span>
+              </span>
+            </summary>
+            <div class="component-detail-body">
+              <p><strong>Objective.</strong> For each head, the pre-softmax attention score is
+              \( A_i = X_q W_{qk,i} X_{kv}^T \). We seek a rank-\(r\) approximation
+              \(\widetilde{W}_{qk,i}\) minimising the score error:</p>
+              <div class="math-block">
+                \[
+                  \arg\min_{\widetilde{W}_{qk,i},\;\operatorname{rank}=r}
+                  \bigl\| X_q (W_{qk,i} - \widetilde{W}_{qk,i}) X_{kv}^T \bigr\|_F^2
+                \]
+              </div>
+              <p>This is equivalent to minimising
+              \(\| R_{xx,q}^{1/2}(W_{qk,i}-\widetilde{W}_{qk,i})R_{xx,kv}^{1/2} \|_F^2\),
+              where \(R_{xx,q} = \tfrac{1}{l_q}X_q^T X_q\) and
+              \(R_{xx,kv} = \tfrac{1}{l_{kv}}X_{kv}^T X_{kv}\) are the activation autocorrelation matrices.</p>
+              <p><strong>Closed-form solution.</strong></p>
+              <div class="math-block">
+                \[
+                  \widetilde{W}_{qk,i} =
+                  \bigl(R_{xx,q}^{1/2}\bigr)^{-1}
+                  \operatorname{SVD}_r\!\Bigl(R_{xx,q}^{1/2}\,W_{qk,i}\,R_{xx,kv}^{1/2}\Bigr)
+                  \bigl(R_{xx,kv}^{1/2}\bigr)^{-1}
+                \]
+              </div>
+              <p>The query and key weights are then assigned as two separate projections with the
+              new (smaller) head dimension \(r &lt; d_{qk}\), reducing both model size and KV-cache
+              without any extra GEMM at inference.</p>
+            </div>
+          </details>
+
+          <!-- OV -->
+          <details class="component-detail component-detail-ov">
+            <summary>
+              <span class="comp-icon">OV</span>
+              <span>
+                <span class="comp-label" style="font-weight:800; font-size:1.05rem;">A<sup>3</sup>-OV</span>
+                <span style="color:#555; font-weight:400; margin-left:8px;">Output-Value Attention Output Approximation</span>
+              </span>
+            </summary>
+            <div class="component-detail-body">
+              <p><strong>Objective.</strong> The attention output of head \(i\) is
+              \(O_i = P_i W_{vo,i}\), where \(P_i = A'_i X_{kv}\) is the post-softmax context matrix.
+              We minimise the per-head output error:</p>
+              <div class="math-block">
+                \[
+                  \arg\min_{\widetilde{W}_{vo,i},\;\operatorname{rank}=r}
+                  \bigl\| P_i (W_{vo,i} - \widetilde{W}_{vo,i}) \bigr\|_F^2
+                \]
+              </div>
+              <p>This is equivalent to minimising
+              \(\| R_{pp,i}^{1/2}(W_{vo,i}-\widetilde{W}_{vo,i}) \|_F^2\),
+              where \(R_{pp,i} = \tfrac{1}{l_q}P_i^T P_i\).</p>
+              <p><strong>Closed-form solution.</strong></p>
+              <div class="math-block">
+                \[
+                  \widetilde{W}_{vo,i} =
+                  \bigl(R_{pp,i}^{1/2}\bigr)^{-1}
+                  \operatorname{SVD}_r\!\Bigl(R_{pp,i}^{1/2}\,W_{vo,i}\Bigr)
+                \]
+              </div>
+              <p>Value and output weights are assigned with a new head dimension
+              \(r &lt; d_{vo}\). Treating each head independently upper-bounds the total attention
+              output error and admits a simple parallel implementation.</p>
+            </div>
+          </details>
+
+          <!-- MLP -->
+          <details class="component-detail component-detail-mlp">
+            <summary>
+              <span class="comp-icon">MLP</span>
+              <span>
+                <span class="comp-label" style="font-weight:800; font-size:1.05rem;">A<sup>3</sup>-MLP</span>
+                <span style="color:#555; font-weight:400; margin-left:8px;">MLP Intermediate-Size Reduction</span>
+              </span>
+            </summary>
+            <div class="component-detail-body">
+              <p><strong>Objective.</strong> The non-linear activation in MLP prevents direct SVD.
+              Instead, we find a diagonal selection matrix
+              \(U = \operatorname{diag}(u_1,\dots,u_{d_{\text{inter}}})\)
+              that keeps the \(r\) most important intermediate neurons:</p>
+              <div class="math-block">
+                \[
+                  \arg\min_{U=\operatorname{diag}(\cdot),\;\operatorname{rank}=r}
+                  \bigl\| X_{\text{down}} U W_{\text{down}} - X_{\text{down}} W_{\text{down}} \bigr\|_F^2
+                \]
+              </div>
+              <p>Equivalently, minimise
+              \(\| R_{xx,d}^{1/2} U W_{\text{down}} - R_{xx,d}^{1/2} W_{\text{down}} \|_F^2\),
+              where \(R_{xx,d} = \tfrac{1}{l}X_{\text{down}}^T X_{\text{down}}\).</p>
+              <p><strong>Solution (CUR decomposition).</strong> Score each intermediate dimension by</p>
+              <div class="math-block">
+                \[
+                  \lambda_i = \| r_i \|_2^2 \cdot \| w_i \|_2^2
+                \]
+              </div>
+              <p>where \(r_i\) is the \(i\)-th column of \(R_{xx,d}^{1/2}\) and \(w_i\) the
+              \(i\)-th row of \(W_{\text{down}}\). Keep the top-\(r\) indices; the corresponding
+              rows/columns of \(W_{\text{down}}\), \(W_{\text{up}}\), and \(W_{\text{gate}}\)
+              are retained, directly reducing \(d_{\text{inter}}\) to \(r\) with no extra GEMM.</p>
+            </div>
+          </details>
+
+        </div>
+
+        <p class="is-size-5" style="text-align:justify; margin-top:24px;">
+          A<sup>3</sup> supports vanilla MHA, MHA with RoPE (via CUR approximation that respects
+          RoPE frequency pairing), and GQA (via joint SVD across query heads sharing a key head),
+          making it applicable to most modern LLMs. In this work, we report LLaMA-2/3, Phi-3, and MPT family.
+        </p>
+
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ===================== /METHOD ===================== -->
+
+
+<!-- ===================== RESULTS ===================== -->
+<section class="teaser" id="results" style="margin-top:24px;">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="hero-body" style="width:100%;">
+
+        <h2>Experiments</h2>
+        <div class="section-divider"></div>
+
+        <p class="is-size-5" style="text-align:justify; margin-bottom:20px;">
+          We evaluate A<sup>3</sup> on a range of LLM architectures: MHA-NoPE (MPT),
+          MHA-RoPE (LLaMA 1&amp;2), and GQA-RoPE (LLaMA 3.1, Phi 3). Tasks span
+          pretraining perplexity (WikiText-2, C4, SlimPajama) and downstream accuracy
+          (ARC-Challenge, BoolQ, Winogrande, GSM8K, MMLU) and KV cache compression. All results are post-training
+          without fine-tuning.
+        </p>
+
+        <!-- Preliminary results
+        <div class="content" style="margin-bottom:32px;">
+          <figure>
+            <img src="./static/images/fig-llama-7b-ppl.png" alt="LLaMA-7B perplexity comparison across compression ratios">
+            <figcaption class="method-caption" style="text-align:center;">
+              <strong>Perplexity (↓) on WikiText-2 for LLaMA-7B</strong> across 20%, 40%, and 60%
+              compression ratios. A<sup>3</sup> and SVD-LLM are two to three orders of magnitude
+              better than plain SVD and FWSVD; A<sup>3</sup> consistently outperforms SVD-LLM.
+            </figcaption>
+          </figure>
+        </div> -->
+
+        <!-- Main PPL table -->
+        <h3 class="title is-4" style="margin-top:8px;">Main Results: Perplexity</h3>
+        <p class="is-size-5" style="text-align:justify; margin-bottom:16px;">
+          Perplexity (↓) on WikiText-2, C4, and SlimPajama at 10% and 20% compression ratios.
+          <strong>Bold</strong> indicates the best result per setting. A<sup>3</sup> outperforms SVD-LLM
+          by a large margin across all models and benchmarks. The gap is especially pronounced on
+          GQA-RoPE models (LLaMA 3.1), where existing methods struggle.
+        </p>
+        <div class="table-container results-table-wrap">
+          <table class="table is-bordered is-striped is-hoverable is-fullwidth results-table">
+            <thead>
+              <tr>
+                <th rowspan="2">Model</th>
+                <th rowspan="2">Method</th>
+                <th colspan="3" class="has-text-centered">10% Compression</th>
+                <th colspan="3" class="has-text-centered">20% Compression</th>
+              </tr>
+              <tr>
+                <th class="has-text-centered">WikiText-2</th>
+                <th class="has-text-centered">C4</th>
+                <th class="has-text-centered">SlimPajama</th>
+                <th class="has-text-centered">WikiText-2</th>
+                <th class="has-text-centered">C4</th>
+                <th class="has-text-centered">SlimPajama</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- LLaMA-2-7B -->
+              <tr>
+                <td rowspan="2" class="model-cell">LLaMA-2-7B<br><span class="arch-tag">MHA-RoPE</span></td>
+                <td class="method-baseline">SVD-LLM</td>
+                <td class="has-text-centered">8.78</td>
+                <td class="has-text-centered">11.73</td>
+                <td class="has-text-centered">9.49</td>
+                <td class="has-text-centered">11.58</td>
+                <td class="has-text-centered">14.91</td>
+                <td class="has-text-centered">11.93</td>
+              </tr>
+              <tr>
+                <td class="method-ours">A<sup>3</sup> (ours)</td>
+                <td class="has-text-centered best-result">5.96</td>
+                <td class="has-text-centered best-result">8.34</td>
+                <td class="has-text-centered best-result">6.68</td>
+                <td class="has-text-centered best-result">7.22</td>
+                <td class="has-text-centered best-result">9.91</td>
+                <td class="has-text-centered best-result">7.91</td>
+              </tr>
+              <!-- LLaMA-2-13B -->
+              <tr>
+                <td rowspan="2" class="model-cell">LLaMA-2-13B<br><span class="arch-tag">MHA-RoPE</span></td>
+                <td class="method-baseline">SVD-LLM</td>
+                <td class="has-text-centered">7.09</td>
+                <td class="has-text-centered">9.98</td>
+                <td class="has-text-centered">7.95</td>
+                <td class="has-text-centered">9.03</td>
+                <td class="has-text-centered">12.35</td>
+                <td class="has-text-centered">9.75</td>
+              </tr>
+              <tr>
+                <td class="method-ours">A<sup>3</sup> (ours)</td>
+                <td class="has-text-centered best-result">5.32</td>
+                <td class="has-text-centered best-result">7.65</td>
+                <td class="has-text-centered best-result">7.65</td>
+                <td class="has-text-centered best-result">6.24</td>
+                <td class="has-text-centered best-result">8.99</td>
+                <td class="has-text-centered best-result">7.15</td>
+              </tr>
+              <!-- LLaMA-3.1-8B -->
+              <tr>
+                <td rowspan="2" class="model-cell">LLaMA-3.1-8B<br><span class="arch-tag">GQA-RoPE</span></td>
+                <td class="method-baseline">SVD-LLM</td>
+                <td class="has-text-centered">19.12</td>
+                <td class="has-text-centered">19.37</td>
+                <td class="has-text-centered">15.14</td>
+                <td class="has-text-centered">42.28</td>
+                <td class="has-text-centered">33.60</td>
+                <td class="has-text-centered">27.44</td>
+              </tr>
+              <tr>
+                <td class="method-ours">A<sup>3</sup> (ours)</td>
+                <td class="has-text-centered best-result">7.93</td>
+                <td class="has-text-centered best-result">12.56</td>
+                <td class="has-text-centered best-result">9.52</td>
+                <td class="has-text-centered best-result">11.36</td>
+                <td class="has-text-centered best-result">17.87</td>
+                <td class="has-text-centered best-result">13.58</td>
+              </tr>
+              <!-- LLaMA-3.1-70B -->
+              <tr>
+                <td rowspan="2" class="model-cell">LLaMA-3.1-70B<br><span class="arch-tag">GQA-RoPE</span></td>
+                <td class="method-baseline">SVD-LLM</td>
+                <td class="has-text-centered">7.87</td>
+                <td class="has-text-centered">11.30</td>
+                <td class="has-text-centered">8.43</td>
+                <td class="has-text-centered">9.75</td>
+                <td class="has-text-centered best-result">13.77</td>
+                <td class="has-text-centered">10.44</td>
+              </tr>
+              <tr>
+                <td class="method-ours">A<sup>3</sup> (ours)</td>
+                <td class="has-text-centered best-result highlight-cell">4.69</td>
+                <td class="has-text-centered best-result">8.83</td>
+                <td class="has-text-centered best-result">6.59</td>
+                <td class="has-text-centered best-result">8.32</td>
+                <td class="has-text-centered">13.94</td>
+                <td class="has-text-centered best-result">10.02</td>
+              </tr>
+              <!-- Phi-3-medium-14B -->
+              <tr>
+                <td rowspan="2" class="model-cell">Phi-3-medium-14B<br><span class="arch-tag">GQA-RoPE</span></td>
+                <td class="method-baseline">SVD-LLM</td>
+                <td class="has-text-centered">6.81</td>
+                <td class="has-text-centered">10.47</td>
+                <td class="has-text-centered">8.40</td>
+                <td class="has-text-centered">8.14</td>
+                <td class="has-text-centered">11.90</td>
+                <td class="has-text-centered">9.67</td>
+              </tr>
+              <tr>
+                <td class="method-ours">A<sup>3</sup> (ours)</td>
+                <td class="has-text-centered best-result">5.44</td>
+                <td class="has-text-centered best-result">9.48</td>
+                <td class="has-text-centered best-result">7.28</td>
+                <td class="has-text-centered best-result">6.40</td>
+                <td class="has-text-centered best-result">10.59</td>
+                <td class="has-text-centered best-result">8.16</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Main accuracy table -->
+        <h3 class="title is-4" style="margin-top:40px;">Main Results: Downstream Task Accuracy</h3>
+        <p class="is-size-5" style="text-align:justify; margin-bottom:16px;">
+          Accuracy (↑) on five downstream tasks. A<sup>3</sup> consistently achieves higher average
+          accuracy than SVD-LLM across all models and compression ratios, with the largest gains
+          on GQA-RoPE architectures at 10% compression.
+        </p>
+        <div class="table-container results-table-wrap">
+          <table class="table is-bordered is-striped is-hoverable is-fullwidth results-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th class="has-text-centered">CRatio</th>
+                <th>Method</th>
+                <th class="has-text-centered">ARC-c</th>
+                <th class="has-text-centered">BoolQ</th>
+                <th class="has-text-centered">WinoG</th>
+                <th class="has-text-centered">GSM8k</th>
+                <th class="has-text-centered">MMLU</th>
+                <th class="has-text-centered"><strong>Avg.</strong></th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- LLaMA-2-7b -->
+              <tr class="original-row">
+                <td rowspan="5" class="model-cell">LLaMA-2-7b<br><span class="arch-tag">MHA-RoPE</span></td>
+                <td class="has-text-centered">—</td>
+                <td class="method-original">Original</td>
+                <td class="has-text-centered">0.4829</td>
+                <td class="has-text-centered">0.7777</td>
+                <td class="has-text-centered">0.7498</td>
+                <td class="has-text-centered">0.1387</td>
+                <td class="has-text-centered">0.4582</td>
+                <td class="has-text-centered"><strong>0.5158</strong></td>
+              </tr>
+              <tr>
+                <td rowspan="2" class="has-text-centered">10%</td>
+                <td class="method-baseline">SVD-LLM</td>
+                <td class="has-text-centered">0.3882</td>
+                <td class="has-text-centered">0.6749</td>
+                <td class="has-text-centered">0.6803</td>
+                <td class="has-text-centered">0.0129</td>
+                <td class="has-text-centered">0.3477</td>
+                <td class="has-text-centered">0.4166</td>
+              </tr>
+              <tr>
+                <td class="method-ours">A<sup>3</sup> (ours)</td>
+                <td class="has-text-centered best-result">0.4761</td>
+                <td class="has-text-centered best-result">0.7330</td>
+                <td class="has-text-centered best-result">0.7435</td>
+                <td class="has-text-centered best-result">0.1130</td>
+                <td class="has-text-centered best-result">0.4398</td>
+                <td class="has-text-centered best-result">0.4960</td>
+              </tr>
+              <tr>
+                <td rowspan="2" class="has-text-centered">20%</td>
+                <td class="method-baseline">SVD-LLM</td>
+                <td class="has-text-centered">0.3139</td>
+                <td class="has-text-centered">0.6602</td>
+                <td class="has-text-centered">0.6464</td>
+                <td class="has-text-centered">0.0045</td>
+                <td class="has-text-centered">0.3119</td>
+                <td class="has-text-centered">0.3837</td>
+              </tr>
+              <tr>
+                <td class="method-ours">A<sup>3</sup> (ours)</td>
+                <td class="has-text-centered best-result">0.4369</td>
+                <td class="has-text-centered best-result">0.7174</td>
+                <td class="has-text-centered best-result">0.7072</td>
+                <td class="has-text-centered best-result">0.0751</td>
+                <td class="has-text-centered best-result">0.3979</td>
+                <td class="has-text-centered best-result">0.4621</td>
+              </tr>
+              <!-- LLaMA-2-13b -->
+              <tr class="original-row">
+                <td rowspan="5" class="model-cell">LLaMA-2-13b<br><span class="arch-tag">MHA-RoPE</span></td>
+                <td class="has-text-centered">—</td>
+                <td class="method-original">Original</td>
+                <td class="has-text-centered">0.5538</td>
+                <td class="has-text-centered">0.8086</td>
+                <td class="has-text-centered">0.7711</td>
+                <td class="has-text-centered">0.2343</td>
+                <td class="has-text-centered">0.5513</td>
+                <td class="has-text-centered"><strong>0.5774</strong></td>
+              </tr>
+              <tr>
+                <td rowspan="2" class="has-text-centered">10%</td>
+                <td class="method-baseline">SVD-LLM</td>
+                <td class="has-text-centered">0.4206</td>
+                <td class="has-text-centered best-result">0.8061</td>
+                <td class="has-text-centered">0.7308</td>
+                <td class="has-text-centered">0.0902</td>
+                <td class="has-text-centered">0.4772</td>
+                <td class="has-text-centered">0.5000</td>
+              </tr>
+              <tr>
+                <td class="method-ours">A<sup>3</sup> (ours)</td>
+                <td class="has-text-centered best-result">0.5213</td>
+                <td class="has-text-centered">0.7865</td>
+                <td class="has-text-centered best-result">0.7743</td>
+                <td class="has-text-centered best-result">0.1971</td>
+                <td class="has-text-centered best-result">0.5324</td>
+                <td class="has-text-centered best-result">0.5560</td>
+              </tr>
+              <tr>
+                <td rowspan="2" class="has-text-centered">20%</td>
+                <td class="method-baseline">SVD-LLM</td>
+                <td class="has-text-centered">0.3472</td>
+                <td class="has-text-centered best-result">0.7877</td>
+                <td class="has-text-centered">0.6898</td>
+                <td class="has-text-centered">0.0379</td>
+                <td class="has-text-centered">0.4318</td>
+                <td class="has-text-centered">0.4546</td>
+              </tr>
+              <tr>
+                <td class="method-ours">A<sup>3</sup> (ours)</td>
+                <td class="has-text-centered best-result">0.4727</td>
+                <td class="has-text-centered">0.7654</td>
+                <td class="has-text-centered best-result">0.7364</td>
+                <td class="has-text-centered best-result">0.1645</td>
+                <td class="has-text-centered best-result">0.4804</td>
+                <td class="has-text-centered best-result">0.5180</td>
+              </tr>
+              <!-- LLaMA-3.1-8B -->
+              <tr class="original-row">
+                <td rowspan="5" class="model-cell">LLaMA-3.1-8B<br><span class="arch-tag">GQA-RoPE</span></td>
+                <td class="has-text-centered">—</td>
+                <td class="method-original">Original</td>
+                <td class="has-text-centered">0.5401</td>
+                <td class="has-text-centered">0.8190</td>
+                <td class="has-text-centered">0.7822</td>
+                <td class="has-text-centered">0.4920</td>
+                <td class="has-text-centered">0.6535</td>
+                <td class="has-text-centered"><strong>0.6484</strong></td>
+              </tr>
+              <tr>
+                <td rowspan="2" class="has-text-centered">10%</td>
+                <td class="method-baseline">SVD-LLM</td>
+                <td class="has-text-centered">0.3575</td>
+                <td class="has-text-centered">0.7458</td>
+                <td class="has-text-centered best-result">0.7111</td>
+                <td class="has-text-centered">0.0447</td>
+                <td class="has-text-centered">0.4708</td>
+                <td class="has-text-centered">0.4603</td>
+              </tr>
+              <tr>
+                <td class="method-ours">A<sup>3</sup> (ours)</td>
+                <td class="has-text-centered best-result">0.4565</td>
+                <td class="has-text-centered best-result">0.7884</td>
+                <td class="has-text-centered">0.7072</td>
+                <td class="has-text-centered best-result">0.2388</td>
+                <td class="has-text-centered best-result">0.5922</td>
+                <td class="has-text-centered best-result">0.5500</td>
+              </tr>
+              <tr>
+                <td rowspan="2" class="has-text-centered">20%</td>
+                <td class="method-baseline">SVD-LLM</td>
+                <td class="has-text-centered">0.2534</td>
+                <td class="has-text-centered best-result">0.6948</td>
+                <td class="has-text-centered best-result">0.6440</td>
+                <td class="has-text-centered">0.0113</td>
+                <td class="has-text-centered">0.3604</td>
+                <td class="has-text-centered">0.3880</td>
+              </tr>
+              <tr>
+                <td class="method-ours">A<sup>3</sup> (ours)</td>
+                <td class="has-text-centered best-result">0.3345</td>
+                <td class="has-text-centered">0.6823</td>
+                <td class="has-text-centered">0.6417</td>
+                <td class="has-text-centered best-result">0.0705</td>
+                <td class="has-text-centered best-result">0.4649</td>
+                <td class="has-text-centered best-result">0.4336</td>
+              </tr>
+              <!-- LLaMA-3.1-70B -->
+              <tr class="original-row">
+                <td rowspan="5" class="model-cell">LLaMA-3.1-70B<br><span class="arch-tag">GQA-RoPE</span></td>
+                <td class="has-text-centered">—</td>
+                <td class="method-original">Original</td>
+                <td class="has-text-centered">0.6536</td>
+                <td class="has-text-centered">0.8538</td>
+                <td class="has-text-centered">0.8445</td>
+                <td class="has-text-centered">0.8036</td>
+                <td class="has-text-centered">0.7864</td>
+                <td class="has-text-centered"><strong>0.7768</strong></td>
+              </tr>
+              <tr>
+                <td rowspan="2" class="has-text-centered">10%</td>
+                <td class="method-baseline">SVD-LLM</td>
+                <td class="has-text-centered">0.5742</td>
+                <td class="has-text-centered">0.8401</td>
+                <td class="has-text-centered">0.8051</td>
+                <td class="has-text-centered">0.5087</td>
+                <td class="has-text-centered">0.7181</td>
+                <td class="has-text-centered">0.6797</td>
+              </tr>
+              <tr>
+                <td class="method-ours">A<sup>3</sup> (ours)</td>
+                <td class="has-text-centered best-result">0.6323</td>
+                <td class="has-text-centered best-result">0.8532</td>
+                <td class="has-text-centered best-result">0.8335</td>
+                <td class="has-text-centered best-result">0.7453</td>
+                <td class="has-text-centered best-result">0.7470</td>
+                <td class="has-text-centered best-result">0.7508</td>
+              </tr>
+              <tr>
+                <td rowspan="2" class="has-text-centered">20%</td>
+                <td class="method-baseline">SVD-LLM</td>
+                <td class="has-text-centered best-result">0.4957</td>
+                <td class="has-text-centered best-result">0.8226</td>
+                <td class="has-text-centered best-result">0.7727</td>
+                <td class="has-text-centered">0.3040</td>
+                <td class="has-text-centered best-result">0.6620</td>
+                <td class="has-text-centered">0.6025</td>
+              </tr>
+              <tr>
+                <td class="method-ours">A<sup>3</sup> (ours)</td>
+                <td class="has-text-centered">0.4667</td>
+                <td class="has-text-centered">0.8144</td>
+                <td class="has-text-centered">0.6875</td>
+                <td class="has-text-centered best-result">0.4951</td>
+                <td class="has-text-centered">0.6145</td>
+                <td class="has-text-centered best-result">0.6071</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- KV cache table -->
+        <h3 class="title is-4" style="margin-top:40px;">Main Results: KV Cache Compression</h3>
+        <p class="is-size-5" style="text-align:justify; margin-bottom:16px;">
+          Perplexity (↓) when compressing <em>both</em> the KV cache and parameters simultaneously,
+          compared against CLOVER and Palu on MPT-7B and MPT-30B (MHA-NoPE). A<sup>3</sup> achieves
+          the best perplexity at every compression ratio, with an especially large margin at high
+          compression (60–80%) where baselines degrade catastrophically.
+        </p>
+        <div class="table-container results-table-wrap">
+          <table class="table is-bordered is-striped is-hoverable is-fullwidth results-table">
+            <thead>
+              <tr>
+                <th rowspan="2">Model</th>
+                <th rowspan="2" class="has-text-centered">CRatio</th>
+                <th colspan="3" class="has-text-centered">SlimPajama</th>
+                <th colspan="3" class="has-text-centered">C4</th>
+                <th colspan="3" class="has-text-centered">WikiText-2</th>
+              </tr>
+              <tr>
+                <th class="has-text-centered">CLOVER</th>
+                <th class="has-text-centered">Palu</th>
+                <th class="has-text-centered">A<sup>3</sup></th>
+                <th class="has-text-centered">CLOVER</th>
+                <th class="has-text-centered">Palu</th>
+                <th class="has-text-centered">A<sup>3</sup></th>
+                <th class="has-text-centered">CLOVER</th>
+                <th class="has-text-centered">Palu</th>
+                <th class="has-text-centered">A<sup>3</sup></th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- MPT-7B -->
+              <tr>
+                <td rowspan="4" class="model-cell">MPT-7B<br><span class="arch-tag">MHA-NoPE</span></td>
+                <td class="has-text-centered">20%</td>
+                <td class="has-text-centered">48.11</td>
+                <td class="has-text-centered">9.67</td>
+                <td class="has-text-centered best-result method-ours">8.88</td>
+                <td class="has-text-centered">53.29</td>
+                <td class="has-text-centered">11.74</td>
+                <td class="has-text-centered best-result method-ours">10.77</td>
+                <td class="has-text-centered">77.78</td>
+                <td class="has-text-centered">8.73</td>
+                <td class="has-text-centered best-result method-ours">8.05</td>
+              </tr>
+              <tr>
+                <td class="has-text-centered">40%</td>
+                <td class="has-text-centered">383</td>
+                <td class="has-text-centered">11.51</td>
+                <td class="has-text-centered best-result method-ours">9.90</td>
+                <td class="has-text-centered">408</td>
+                <td class="has-text-centered">14.18</td>
+                <td class="has-text-centered best-result method-ours">12.20</td>
+                <td class="has-text-centered">795</td>
+                <td class="has-text-centered">10.60</td>
+                <td class="has-text-centered best-result method-ours">9.19</td>
+              </tr>
+              <tr>
+                <td class="has-text-centered">60%</td>
+                <td class="has-text-centered">5397</td>
+                <td class="has-text-centered">25.73</td>
+                <td class="has-text-centered best-result method-ours">15.34</td>
+                <td class="has-text-centered">4919</td>
+                <td class="has-text-centered">32.26</td>
+                <td class="has-text-centered best-result method-ours">18.71</td>
+                <td class="has-text-centered">7895</td>
+                <td class="has-text-centered">25.09</td>
+                <td class="has-text-centered best-result method-ours">15.58</td>
+              </tr>
+              <tr>
+                <td class="has-text-centered">80%</td>
+                <td class="has-text-centered">15467</td>
+                <td class="has-text-centered">5270</td>
+                <td class="has-text-centered best-result method-ours">388</td>
+                <td class="has-text-centered">11661</td>
+                <td class="has-text-centered">3210</td>
+                <td class="has-text-centered best-result method-ours">373</td>
+                <td class="has-text-centered">14434</td>
+                <td class="has-text-centered">13714</td>
+                <td class="has-text-centered best-result method-ours">849</td>
+              </tr>
+              <!-- MPT-30B -->
+              <tr class="original-row">
+                <td rowspan="4" class="model-cell">MPT-30B<br><span class="arch-tag">MHA-NoPE</span></td>
+                <td class="has-text-centered">20%</td>
+                <td class="has-text-centered">11.52</td>
+                <td class="has-text-centered">7.91</td>
+                <td class="has-text-centered best-result method-ours">7.71</td>
+                <td class="has-text-centered">14.53</td>
+                <td class="has-text-centered">9.87</td>
+                <td class="has-text-centered best-result method-ours">9.59</td>
+                <td class="has-text-centered">13.07</td>
+                <td class="has-text-centered">7.04</td>
+                <td class="has-text-centered best-result method-ours">6.73</td>
+              </tr>
+              <tr>
+                <td class="has-text-centered">40%</td>
+                <td class="has-text-centered">18.00</td>
+                <td class="has-text-centered">8.99</td>
+                <td class="has-text-centered best-result method-ours">8.33</td>
+                <td class="has-text-centered">22.43</td>
+                <td class="has-text-centered">11.30</td>
+                <td class="has-text-centered best-result method-ours">10.44</td>
+                <td class="has-text-centered">23.47</td>
+                <td class="has-text-centered">8.40</td>
+                <td class="has-text-centered best-result method-ours">7.40</td>
+              </tr>
+              <tr>
+                <td class="has-text-centered">60%</td>
+                <td class="has-text-centered">54.97</td>
+                <td class="has-text-centered">15.59</td>
+                <td class="has-text-centered best-result method-ours">11.52</td>
+                <td class="has-text-centered">70.65</td>
+                <td class="has-text-centered">18.91</td>
+                <td class="has-text-centered best-result method-ours">14.22</td>
+                <td class="has-text-centered">95.45</td>
+                <td class="has-text-centered">18.88</td>
+                <td class="has-text-centered best-result method-ours">11.28</td>
+              </tr>
+              <tr>
+                <td class="has-text-centered">80%</td>
+                <td class="has-text-centered">779</td>
+                <td class="has-text-centered">211</td>
+                <td class="has-text-centered best-result method-ours">37.09</td>
+                <td class="has-text-centered">732</td>
+                <td class="has-text-centered">253</td>
+                <td class="has-text-centered best-result method-ours">42.85</td>
+                <td class="has-text-centered">1524</td>
+                <td class="has-text-centered">339</td>
+                <td class="has-text-centered best-result method-ours">46.72</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ── Runtime Performance ── -->
+        <h3 class="title is-4" style="margin-top:40px;">Runtime Performance</h3>
+
+        <!-- Highlight box -->
+        <div class="runtime-highlight-box">
+          <div class="runtime-highlight-icon">⚡</div>
+          <div>
+            <strong>Zero inference overhead — works with existing stacks out of the box.</strong>
+            <p style="margin-top:6px; font-weight:400;">
+              Unlike low-rank methods that replace \(W\) with two matrices \(AB\) and therefore
+              require an <em>extra GEMM kernel launch per layer</em>, A<sup>3</sup> simply
+              reduces the hidden dimensions inside each component
+              (<span class="highlight-qk">head dim \(D\)</span>,
+              <span class="highlight-ov">head dim \(D\)</span>,
+              <span class="highlight-mlp">intermediate size \(I\)</span>).
+              The compressed model retains the <strong>exact same architecture layout</strong> as
+              the original — same number of linear layers, same data flow — so it runs unchanged
+              on any inference stack (PyTorch Eager, FlashAttention, SDPA, vLLM, etc.)
+              without custom kernels or operator fusion.
+            </p>
+          </div>
+        </div>
+
+        <!-- FLOPs explanation -->
+        <div style="margin-top:28px;">
+          <h4 class="title is-5" style="margin-bottom:10px;">How we count theoretical FLOPs</h4>
+          <p class="is-size-5" style="text-align:justify; margin-bottom:14px;">
+            We measure theoretical FLOPs for a single decoder block during prefill by summing
+            four contributions — attention projections + dot-products, MLP, layer-norm, and residuals:
+          </p>
+          <div class="math-block" style="text-align:left; padding: 18px 24px;">
+            \[
+              \text{FLOPs}_\text{total}
+              = \underbrace{8BLH D + 4BL^2 A D + BL^2 A}_{\text{attention}}
+              + \underbrace{6BLIH}_{\text{MLP}}
+              + \underbrace{4BLH}_{\text{norm + residual}}
+            \]
+          </div>
+          <p class="is-size-6" style="color:#555; margin-top:10px;">
+            \(B\) = batch size, \(L\) = sequence length, \(H\) = hidden size,
+            \(D\) = head dimension, \(A\) = number of heads, \(I\) = MLP intermediate size.
+          </p>
+          <p class="is-size-5" style="text-align:justify; margin-top:14px;">
+            A<sup>3</sup> compresses by reducing \(D\) (QK and OV) and \(I\) (MLP) proportionally,
+            so the theoretical FLOPs reduction closely tracks the compression ratio.
+            The small gap arises from dimension-independent terms (normalization, residual, softmax).
+          </p>
+        </div>
+
+        <!-- Runtime table -->
+        <h4 class="title is-5" style="margin-top:28px; margin-bottom:10px;">
+          LLaMA-2-13B — Throughput &amp; Memory on 1× H100
+        </h4>
+        <p class="is-size-5" style="text-align:justify; margin-bottom:14px;">
+          Measured throughput (tokens/s ↑) and peak GPU memory (MB ↓) for Eager and SDPA
+          attention kernels. Speedup and memory ratios are relative to the uncompressed original.
+        </p>
+        <div class="table-container results-table-wrap">
+          <table class="table is-bordered is-striped is-hoverable is-fullwidth results-table">
+            <thead>
+              <tr>
+                <th rowspan="2" class="has-text-centered">Compression</th>
+                <th rowspan="2" class="has-text-centered">Theoretical<br>FLOPs</th>
+                <th rowspan="2" class="has-text-centered">Kernel</th>
+                <th colspan="2" class="has-text-centered">Absolute</th>
+                <th colspan="3" class="has-text-centered">vs. Original</th>
+              </tr>
+              <tr>
+                <th class="has-text-centered">Throughput<br>(tok/s ↑)</th>
+                <th class="has-text-centered">Peak Mem<br>(MB ↓)</th>
+                <th class="has-text-centered">FLOPs<br>ratio</th>
+                <th class="has-text-centered">Speedup ↑</th>
+                <th class="has-text-centered">Mem<br>ratio ↓</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Original -->
+              <tr class="original-row">
+                <td rowspan="2" class="model-cell has-text-centered">Original<br><span class="arch-tag">128/128/13824</span></td>
+                <td rowspan="2" class="has-text-centered">\(2.77{\times}10^{12}\)</td>
+                <td class="has-text-centered method-original">Eager</td>
+                <td class="has-text-centered">7,285</td>
+                <td class="has-text-centered">35,004</td>
+                <td class="has-text-centered">1.00×</td>
+                <td class="has-text-centered">1.00×</td>
+                <td class="has-text-centered">1.00×</td>
+              </tr>
+              <tr class="original-row">
+                <td class="has-text-centered method-original">SDPA</td>
+                <td class="has-text-centered">12,319</td>
+                <td class="has-text-centered">32,917</td>
+                <td class="has-text-centered">1.00×</td>
+                <td class="has-text-centered">1.69×</td>
+                <td class="has-text-centered">0.94×</td>
+              </tr>
+              <!-- 20% -->
+              <tr>
+                <td rowspan="2" class="model-cell has-text-centered">20% compression</td>
+                <td rowspan="2" class="has-text-centered">\(2.16{\times}10^{12}\)</td>
+                <td class="has-text-centered method-baseline">Eager</td>
+                <td class="has-text-centered best-result">8,077</td>
+                <td class="has-text-centered best-result">28,114</td>
+                <td class="has-text-centered">0.78×</td>
+                <td class="has-text-centered best-result">1.11×</td>
+                <td class="has-text-centered best-result">0.80×</td>
+              </tr>
+              <tr>
+                <td class="has-text-centered method-baseline">SDPA</td>
+                <td class="has-text-centered best-result">15,096</td>
+                <td class="has-text-centered best-result">26,037</td>
+                <td class="has-text-centered">0.78×</td>
+                <td class="has-text-centered best-result">2.07×</td>
+                <td class="has-text-centered best-result">0.74×</td>
+              </tr>
+              <!-- 40% -->
+              <tr>
+                <td rowspan="2" class="model-cell has-text-centered">40% compression</td>
+                <td rowspan="2" class="has-text-centered">\(1.56{\times}10^{12}\)</td>
+                <td class="has-text-centered method-baseline">Eager</td>
+                <td class="has-text-centered best-result">9,350</td>
+                <td class="has-text-centered best-result">21,336</td>
+                <td class="has-text-centered">0.56×</td>
+                <td class="has-text-centered best-result">1.28×</td>
+                <td class="has-text-centered best-result">0.61×</td>
+              </tr>
+              <tr>
+                <td class="has-text-centered method-baseline">SDPA</td>
+                <td class="has-text-centered best-result">20,237</td>
+                <td class="has-text-centered best-result">19,270</td>
+                <td class="has-text-centered">0.56×</td>
+                <td class="has-text-centered best-result">2.78×</td>
+                <td class="has-text-centered best-result">0.55×</td>
+              </tr>
+              <!-- 60% -->
+              <tr>
+                <td rowspan="2" class="model-cell has-text-centered">60% compression</td>
+                <td rowspan="2" class="has-text-centered">\(1.08{\times}10^{12}\)</td>
+                <td class="has-text-centered method-baseline">Eager</td>
+                <td class="has-text-centered best-result">10,405</td>
+                <td class="has-text-centered best-result">16,139</td>
+                <td class="has-text-centered">0.39×</td>
+                <td class="has-text-centered best-result">1.43×</td>
+                <td class="has-text-centered best-result">0.46×</td>
+              </tr>
+              <tr>
+                <td class="has-text-centered method-baseline">SDPA</td>
+                <td class="has-text-centered best-result">25,554</td>
+                <td class="has-text-centered best-result">14,078</td>
+                <td class="has-text-centered">0.39×</td>
+                <td class="has-text-centered best-result">3.51×</td>
+                <td class="has-text-centered best-result">0.40×</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Throughput figure -->
+        <h4 class="title is-5" style="margin-top:32px; margin-bottom:10px;">Throughput at Scale</h4>
+        <p class="is-size-5" style="text-align:justify; margin-bottom:16px;">
+          To validate robustness, we benchmark across GPU types (A6000, H100), batch sizes,
+          model sizes (1B–32B), compression ratios (20%, 40%), sequence lengths (1024, 2048),
+          and attention kernels. A<sup>3</sup> consistently achieves speedups close to the
+          theoretical FLOPs reduction. Larger models and SDPA benefit the most, since the
+          reduced head dimension also lowers attention FLOPs quadratic in sequence length.
+        </p>
+        <div class="content">
+          <figure>
+            <img src="./static/images/gpu_throughput_histograms.png" alt="GPU throughput across models, GPUs and settings">
+            <figcaption class="method-caption" style="text-align:center;">
+              Throughput gains (tokens/sec ↑) across a wide range of deployment settings.
+              Each bar compares A<sup>3</sup>-compressed vs. original model throughput.
+            </figcaption>
+          </figure>
+        </div>
+
+        <!-- TPS vs SVD-LLM foldable -->
+        <div class="component-accordion" style="margin-top:20px;">
+          <details class="component-detail component-detail-app-tps">
+            <summary>
+              <span class="comp-icon" style="font-size:0.72rem;">TPS</span>
+              <span>
+                <span class="comp-label-app" style="font-weight:800; font-size:1.05rem;">TPS Comparison with SVD-LLM</span>
+                <span style="color:#555; font-weight:400; margin-left:8px;">A<sup>3</sup> always achieves a speedup; SVD-LLM only gains at aggressive compression due to extra kernel launches</span>
+              </span>
+            </summary>
+            <div class="component-detail-body">
+              <p>
+                Low-rank methods that target general linear layers (e.g. SVD-LLM) split each
+                weight \(W\) into two smaller matrices \(AB\), which saves GEMM FLOPs in linear
+                layers but introduces <em>extra kernel launches and memory read/writes</em> for
+                the decomposed matrices. These overheads offset the savings at moderate compression
+                ratios, meaning SVD-LLM only achieves a net speedup when compression is aggressive
+                enough to overcome them.
+              </p>
+              <p>
+                A<sup>3</sup> avoids this entirely: it reduces head dimension \(D\) and
+                intermediate size \(I\) directly, so both the linear-layer GEMMs
+                <em>and</em> the quadratic attention computation shrink, with no extra operations
+                added. As a result, A<sup>3</sup> always achieves a TPS speedup regardless of
+                compression ratio.
+              </p>
+              <figure style="margin-top:16px;">
+                <img src="./static/images/fig-delta-tps-llama-2-13b.png"
+                     alt="TPS comparison: A3 vs SVD-LLM on LLaMA-2-13B"
+                     style="border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.09);">
+                <figcaption class="method-caption" style="margin-top:8px;">
+                  Tokens per second (TPS ↑) of A<sup>3</sup> vs. SVD-LLM on LLaMA-2-13B
+                  (A100 40GB, batch size 2, sequence length 2048, Eager and SDPA backends).
+                  SVD-LLM only reaches a net speedup at high compression, whereas A<sup>3</sup>
+                  consistently outperforms the uncompressed baseline at every compression ratio.
+                </figcaption>
+              </figure>
+            </div>
+          </details>
+        </div>
+
+        <!-- Ablation grid -->
+        <h3 class="title is-4" style="margin-top:36px;">Ablation Study</h3>
+        <p class="is-size-5" style="text-align:justify; margin-bottom:20px;">
+          We ablate each component to understand its contribution. Adding QK, OV, and MLP
+          compression together is consistently better than any subset.
+        </p>
+
+        <div class="results-grid">
+          <figure>
+            <img src="./static/images/fig-ablation-qk-vo-wikitext.png" alt="Ablation: QK vs OV components">
+            <figcaption>QK &amp; OV component ablation (WikiText-2 perplexity)</figcaption>
+          </figure>
+          <figure>
+            <img src="./static/images/fig-ablation-qk-rope-mlp-wikitext.png" alt="Ablation: QK-RoPE and MLP components">
+            <figcaption>QK-RoPE &amp; MLP component ablation (WikiText-2 perplexity)</figcaption>
+          </figure>
+        </div>
+
+        <!-- Local objective → end-to-end perplexity -->
+        <h3 class="title is-4" style="margin-top:40px;">
+          Local Objective Reduction vs. End-to-End Perplexity
+        </h3>
+        <p class="is-size-5" style="text-align:justify; margin-bottom:16px;">
+          A<sup>3</sup> minimises the error of each component (<span class="highlight-qk">QK</span>,
+          <span class="highlight-ov">OV</span>, <span class="highlight-mlp">MLP</span>)
+          <em>independently</em>. A natural question is how well these local objectives predict the
+          end-to-end perplexity when components are compressed jointly.
+          The table below shows the ΔPPL (perplexity increase over the uncompressed baseline) on
+          WikiText-2 for each component individually, their arithmetic sum, and the actual joint result
+          across five compression ratios.
+        </p>
+        <p class="is-size-5" style="text-align:justify; margin-bottom:20px;">
+          At small compression ratios (≤ 20%), the joint ΔPPL closely tracks the sum of individual
+          contributions — particularly for MPT-7B (MHA-NoPE), where the
+          <span class="highlight-qk">QK</span> and <span class="highlight-ov">OV</span>
+          objectives are truly independent. This validates A<sup>3</sup>'s design: minimising
+          each component's local loss is an effective proxy for end-to-end performance.
+          At larger ratios, interactions emerge, but the joint perplexity remains on the same
+          order of magnitude as the sum, confirming that the independence assumption does not
+          severely compound errors.
+        </p>
+
+        <div class="local-obj-grid">
+          <!-- LLaMA-3.1-8B -->
+          <div>
+            <p class="has-text-centered" style="font-weight:600; margin-bottom:8px;">
+              LLaMA-3.1-8B <span class="arch-tag">GQA-RoPE</span>
+            </p>
+            <div class="table-container results-table-wrap">
+              <table class="table is-bordered is-striped is-hoverable is-fullwidth results-table">
+                <thead>
+                  <tr>
+                    <th>Component</th>
+                    <th class="has-text-centered">5%</th>
+                    <th class="has-text-centered">10%</th>
+                    <th class="has-text-centered">15%</th>
+                    <th class="has-text-centered">20%</th>
+                    <th class="has-text-centered">40%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="highlight-qk">QK</span> only</td>
+                    <td class="has-text-centered">0.07</td>
+                    <td class="has-text-centered">0.16</td>
+                    <td class="has-text-centered">0.32</td>
+                    <td class="has-text-centered">0.56</td>
+                    <td class="has-text-centered">13.28</td>
+                  </tr>
+                  <tr>
+                    <td><span class="highlight-ov">OV</span> only</td>
+                    <td class="has-text-centered">0.27</td>
+                    <td class="has-text-centered">0.39</td>
+                    <td class="has-text-centered">0.58</td>
+                    <td class="has-text-centered">0.78</td>
+                    <td class="has-text-centered">2.79</td>
+                  </tr>
+                  <tr class="sum-row">
+                    <td>QK + OV <span class="delta">(sum)</span></td>
+                    <td class="has-text-centered">0.34</td>
+                    <td class="has-text-centered">0.55</td>
+                    <td class="has-text-centered">0.90</td>
+                    <td class="has-text-centered">1.34</td>
+                    <td class="has-text-centered">16.07</td>
+                  </tr>
+                  <tr class="original-row">
+                    <td><strong>Both (joint)</strong></td>
+                    <td class="has-text-centered"><strong>0.35</strong></td>
+                    <td class="has-text-centered"><strong>0.59</strong></td>
+                    <td class="has-text-centered"><strong>1.00</strong></td>
+                    <td class="has-text-centered"><strong>1.58</strong></td>
+                    <td class="has-text-centered"><strong>25.07</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- MPT-7B -->
+          <div>
+            <p class="has-text-centered" style="font-weight:600; margin-bottom:8px;">
+              MPT-7B <span class="arch-tag">MHA-NoPE</span>
+            </p>
+            <div class="table-container results-table-wrap">
+              <table class="table is-bordered is-striped is-hoverable is-fullwidth results-table">
+                <thead>
+                  <tr>
+                    <th>Component</th>
+                    <th class="has-text-centered">5%</th>
+                    <th class="has-text-centered">10%</th>
+                    <th class="has-text-centered">15%</th>
+                    <th class="has-text-centered">20%</th>
+                    <th class="has-text-centered">40%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="highlight-qk">QK</span> only</td>
+                    <td class="has-text-centered">−0.004</td>
+                    <td class="has-text-centered">0.005</td>
+                    <td class="has-text-centered">0.040</td>
+                    <td class="has-text-centered">0.092</td>
+                    <td class="has-text-centered">0.75</td>
+                  </tr>
+                  <tr>
+                    <td><span class="highlight-ov">OV</span> only</td>
+                    <td class="has-text-centered">0.048</td>
+                    <td class="has-text-centered">0.097</td>
+                    <td class="has-text-centered">0.166</td>
+                    <td class="has-text-centered">0.248</td>
+                    <td class="has-text-centered">0.98</td>
+                  </tr>
+                  <tr class="sum-row">
+                    <td>QK + OV <span class="delta">(sum)</span></td>
+                    <td class="has-text-centered">0.045</td>
+                    <td class="has-text-centered">0.103</td>
+                    <td class="has-text-centered">0.206</td>
+                    <td class="has-text-centered">0.340</td>
+                    <td class="has-text-centered">1.73</td>
+                  </tr>
+                  <tr class="original-row">
+                    <td><strong>Both (joint)</strong></td>
+                    <td class="has-text-centered"><strong>0.044</strong></td>
+                    <td class="has-text-centered"><strong>0.102</strong></td>
+                    <td class="has-text-centered"><strong>0.197</strong></td>
+                    <td class="has-text-centered"><strong>0.313</strong></td>
+                    <td class="has-text-centered"><strong>1.52</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <p class="is-size-6" style="color:#666; margin-top:8px; margin-bottom:32px;">
+          All values are ΔPPL (perplexity increase over uncompressed baseline) on WikiText-2.
+          For MPT-7B, the joint result at low compression is actually <em>slightly below</em>
+          the sum, suggesting mild beneficial interaction between components.
+        </p>
+
+        <!-- Foldable: further applications -->
+        <div class="component-accordion" style="margin-top:32px; text-align:left;">
+
+          <!-- Quantization -->
+          <details class="component-detail component-detail-app-quant">
+            <summary>
+              <span class="comp-icon" style="font-size:0.75rem;">HQQ</span>
+              <span>
+                <span class="comp-label-app" style="font-weight:800; font-size:1.05rem;">Combination with Quantization</span>
+                <span style="color:#555; font-weight:400; margin-left:8px;">A<sup>3</sup> is orthogonal to weight-only quantization and improves the Pareto frontier</span>
+              </span>
+            </summary>
+            <div class="component-detail-body">
+              <p>
+                A<sup>3</sup> is orthogonal to weight-only quantization methods such as HQQ.
+                Applying HQQ 4-bit quantization on top of an A<sup>3</sup>-compressed model
+                introduces only a small additional perplexity overhead, comparable to quantizing
+                the uncompressed model — confirming that the two techniques do not interfere.
+              </p>
+              <p>
+                In extreme compression regimes, combining A<sup>3</sup> with quantization
+                enables compression levels that are otherwise unreachable. Sub-3-bit quantization
+                alone destabilizes the model, whereas A<sup>3</sup> + 4-bit HQQ achieves a
+                markedly better accuracy–compression trade-off and a continuous Pareto frontier
+                beyond what quantization alone can offer.
+              </p>
+
+              <!-- HQQ perplexity figure -->
+              <figure style="margin: 16px 0;">
+                <img src="./static/images/fig-llama-3.1-8b-hqq.png"
+                     alt="LLaMA-3.1-8B perplexity with HQQ quantization + A3"
+                     style="border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.09);">
+                <figcaption class="method-caption" style="margin-top:8px;">
+                  Perplexity of LLaMA-3.1-8B with HQQ 4-bit quantization, with and without
+                  A<sup>3</sup> compression. The small additional degradation from A<sup>3</sup>
+                  confirms orthogonality to quantization.
+                </figcaption>
+              </figure>
+
+              <!-- Quant + A3 PPL table -->
+              <p><strong>Table: LLaMA-3.1-8B — Perplexity (↓) with HQQ 4-bit + A<sup>3</sup></strong></p>
+              <div class="table-container results-table-wrap">
+                <table class="table is-bordered is-striped is-hoverable results-table">
+                  <thead>
+                    <tr>
+                      <th rowspan="2">Method</th>
+                      <th colspan="2" class="has-text-centered">10% compression</th>
+                      <th colspan="2" class="has-text-centered">20% compression</th>
+                    </tr>
+                    <tr>
+                      <th class="has-text-centered">WikiText-2</th>
+                      <th class="has-text-centered">C4</th>
+                      <th class="has-text-centered">WikiText-2</th>
+                      <th class="has-text-centered">C4</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="original-row">
+                      <td class="method-original">Original</td>
+                      <td class="has-text-centered" colspan="2">6.25 / 10.04</td>
+                      <td class="has-text-centered" colspan="2">6.26 / 10.04</td>
+                    </tr>
+                    <tr>
+                      <td class="method-baseline">Original + HQQ</td>
+                      <td class="has-text-centered">6.72 <span class="delta">(+0.47)</span></td>
+                      <td class="has-text-centered">10.76 <span class="delta">(+0.72)</span></td>
+                      <td class="has-text-centered">6.72 <span class="delta">(+0.46)</span></td>
+                      <td class="has-text-centered">10.76 <span class="delta">(+0.72)</span></td>
+                    </tr>
+                    <tr>
+                      <td class="method-baseline">A<sup>3</sup></td>
+                      <td class="has-text-centered">7.93</td>
+                      <td class="has-text-centered">12.56</td>
+                      <td class="has-text-centered">12.63</td>
+                      <td class="has-text-centered">19.09</td>
+                    </tr>
+                    <tr>
+                      <td class="method-ours">A<sup>3</sup> + HQQ</td>
+                      <td class="has-text-centered">8.73 <span class="delta">(+0.80)</span></td>
+                      <td class="has-text-centered">13.61 <span class="delta">(+1.05)</span></td>
+                      <td class="has-text-centered">12.86 <span class="delta">(+0.22)</span></td>
+                      <td class="has-text-centered">20.49 <span class="delta">(+1.40)</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Extreme quant table: MPT-30B -->
+              <p style="margin-top:20px;"><strong>Table: MPT-30B — ΔPPL on WikiText-2 under extreme compression (4-bit HQQ + A<sup>3</sup>)</strong></p>
+              <div class="table-container results-table-wrap">
+                <table class="table is-bordered is-striped is-hoverable results-table">
+                  <thead>
+                    <tr>
+                      <th>Method</th>
+                      <th class="has-text-centered">Compression ratio</th>
+                      <th class="has-text-centered">Without fine-tuning</th>
+                      <th class="has-text-centered">With fine-tuning</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="original-row">
+                      <td class="method-original">Dense</td>
+                      <td class="has-text-centered">1.00×</td>
+                      <td class="has-text-centered">0</td>
+                      <td class="has-text-centered">0</td>
+                    </tr>
+                    <tr>
+                      <td class="method-baseline">4-bit HQQ</td>
+                      <td class="has-text-centered">4.00×</td>
+                      <td class="has-text-centered">+0.11</td>
+                      <td class="has-text-centered">—</td>
+                    </tr>
+                    <tr>
+                      <td class="method-baseline">2-bit HQQ</td>
+                      <td class="has-text-centered">8.00×</td>
+                      <td class="has-text-centered">+12.78</td>
+                      <td class="has-text-centered">+2.80</td>
+                    </tr>
+                    <tr>
+                      <td class="method-ours">4-bit HQQ + A<sup>3</sup> @ 20%</td>
+                      <td class="has-text-centered">5.00×</td>
+                      <td class="has-text-centered">+0.99</td>
+                      <td class="has-text-centered best-result">+0.59</td>
+                    </tr>
+                    <tr>
+                      <td class="method-ours">4-bit HQQ + A<sup>3</sup> @ 40%</td>
+                      <td class="has-text-centered">6.67×</td>
+                      <td class="has-text-centered">+1.15</td>
+                      <td class="has-text-centered best-result">+0.99</td>
+                    </tr>
+                    <tr>
+                      <td class="method-ours">4-bit HQQ + A<sup>3</sup> @ 60%</td>
+                      <td class="has-text-centered">10.00×</td>
+                      <td class="has-text-centered">+18.15</td>
+                      <td class="has-text-centered">+2.74</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- PPL vs compression rate figure -->
+              <figure style="margin-top:20px;">
+                <img src="./static/images/fig_ppl_quant_crate.png"
+                     alt="Perplexity vs compression rate: A3 + quantization Pareto frontier"
+                     style="border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.09);">
+                <figcaption class="method-caption" style="margin-top:8px;">
+                  Pareto frontier of perplexity vs. compression rate. A<sup>3</sup> combined
+                  with quantization extends the frontier continuously beyond what quantization
+                  alone can achieve, especially in the sub-4-bit regime.
+                </figcaption>
+              </figure>
+            </div>
+          </details>
+
+          <!-- Fine-tuning -->
+          <details class="component-detail component-detail-app-ft">
+            <summary>
+              <span class="comp-icon" style="font-size:0.75rem;">LoRA</span>
+              <span>
+                <span class="comp-label-app" style="font-weight:800; font-size:1.05rem;">Combination with LoRA Fine-Tuning</span>
+                <span style="color:#555; font-weight:400; margin-left:8px;">A<sup>3</sup>'s strong initialization makes it highly receptive to lightweight fine-tuning</span>
+              </span>
+            </summary>
+            <div class="component-detail-body">
+              <p>
+                Following the SVD-LLM setup, we apply LoRA (rank 8) on A<sup>3</sup>-compressed
+                models using 50K Alpaca-cleaned samples over 2 epochs. Because A<sup>3</sup>
+                produces a structurally clean compressed model (no extra matrices, same
+                architecture), LoRA adapts it efficiently from a strong starting point.
+              </p>
+
+              <!-- Fine-tuning table: LLaMA-2-7b -->
+              <p><strong>Table: LLaMA-2-7b — WikiText-2 Perplexity (↓), A<sup>3</sup> with and without LoRA fine-tuning</strong></p>
+              <div class="table-container results-table-wrap">
+                <table class="table is-bordered is-striped is-hoverable results-table">
+                  <thead>
+                    <tr>
+                      <th class="has-text-centered">Compression Ratio</th>
+                      <th class="has-text-centered">A<sup>3</sup></th>
+                      <th class="has-text-centered">A<sup>3</sup> + LoRA Fine-Tuning</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="has-text-centered">20%</td>
+                      <td class="has-text-centered">7.22 <span class="delta">(+1.73)</span></td>
+                      <td class="has-text-centered best-result method-ours">6.94 <span class="delta">(+1.45)</span></td>
+                    </tr>
+                    <tr>
+                      <td class="has-text-centered">40%</td>
+                      <td class="has-text-centered">32.04 <span class="delta">(+24.31)</span></td>
+                      <td class="has-text-centered best-result method-ours">10.53 <span class="delta">(+5.04)</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p style="margin-top:4px; font-size:0.88rem; color:#555;">
+                Δ values are perplexity increases relative to the uncompressed original.
+                Fine-tuning provides the largest gains at high compression (40%), recovering
+                most of the lost performance.
+              </p>
+
+              <!-- MPT-30B combined table (reused from quant section for context) -->
+              <p style="margin-top:20px;"><strong>Table: MPT-30B — ΔPPL under 4-bit HQQ + A<sup>3</sup>, with and without fine-tuning</strong></p>
+              <p style="font-size:0.92rem; color:#444; margin-bottom:10px;">
+                At a 6.67× overall compression (4-bit HQQ + A<sup>3</sup> @ 40%), fine-tuning
+                reduces ΔPPL from +1.15 to just +0.99. Even at 10× compression (60% + 4-bit),
+                fine-tuning brings ΔPPL from +18.15 down to +2.74, highlighting A<sup>3</sup>'s
+                receptiveness to LoRA recovery.
+              </p>
+              <div class="table-container results-table-wrap">
+                <table class="table is-bordered is-striped is-hoverable results-table">
+                  <thead>
+                    <tr>
+                      <th>Method</th>
+                      <th class="has-text-centered">Compression</th>
+                      <th class="has-text-centered">w/o Fine-Tuning</th>
+                      <th class="has-text-centered">w/ Fine-Tuning</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="original-row">
+                      <td class="method-original">Dense</td>
+                      <td class="has-text-centered">1.00×</td>
+                      <td class="has-text-centered">0</td>
+                      <td class="has-text-centered">0</td>
+                    </tr>
+                    <tr>
+                      <td class="method-baseline">2-bit HQQ</td>
+                      <td class="has-text-centered">8.00×</td>
+                      <td class="has-text-centered">+12.78</td>
+                      <td class="has-text-centered">+2.80</td>
+                    </tr>
+                    <tr>
+                      <td class="method-ours">4-bit HQQ + A<sup>3</sup> @ 20%</td>
+                      <td class="has-text-centered">5.00×</td>
+                      <td class="has-text-centered">+0.99</td>
+                      <td class="has-text-centered best-result">+0.59</td>
+                    </tr>
+                    <tr>
+                      <td class="method-ours">4-bit HQQ + A<sup>3</sup> @ 40%</td>
+                      <td class="has-text-centered">6.67×</td>
+                      <td class="has-text-centered">+1.15</td>
+                      <td class="has-text-centered best-result">+0.99</td>
+                    </tr>
+                    <tr>
+                      <td class="method-ours">4-bit HQQ + A<sup>3</sup> @ 60%</td>
+                      <td class="has-text-centered">10.00×</td>
+                      <td class="has-text-centered">+18.15</td>
+                      <td class="has-text-centered">+2.74</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ===================== /RESULTS ===================== -->
+
+
+<!-- ===================== OPEN QUESTIONS ===================== -->
+<section class="section" id="open-questions">
+  <div class="container is-max-desktop">
+    <h2>Open Questions</h2>
+    <div class="section-divider"></div>
+    <p class="is-size-5" style="text-align:justify; margin-bottom:28px;">
+      A<sup>3</sup> leaves several directions open that we find genuinely interesting.
+      We hope these questions inspire follow-up work.
+    </p>
+
+    <div class="oq-list">
+
+      <!-- Q1: Non-uniform rank allocation -->
+      <div class="oq-card">
+        <div class="oq-number">01</div>
+        <div class="oq-body">
+          <h4 class="oq-title">Can non-uniform rank allocation unlock more performance?</h4>
+          <p class="is-size-5">
+            A<sup>3</sup> currently uses a <strong>uniform rank</strong> across all layers and
+            heads. Yet different layers are known to vary in their sensitivity to compression —
+            earlier layers tend to be more robust, while later layers carry more task-specific
+            information and degrade faster under rank reduction.
+          </p>
+        </div>
+      </div>
+
+      <!-- Q2: MLP compression at high ratio -->
+      <div class="oq-card">
+        <div class="oq-number">02</div>
+        <div class="oq-body">
+          <h4 class="oq-title">Is there a better way to compress the MLP at high compression ratios?</h4>
+          <p class="is-size-5">
+            A<sup>3</sup>-MLP uses <strong>CUR decomposition</strong> — it selects the
+            top-\(r\) intermediate neurons by a magnitude-based score \(\lambda_i\).
+            CUR is fast and analytically motivated, but unlike SVD it does not guarantee
+            the globally optimal rank-\(r\) approximation. At high compression ratios (≥ 40%),
+            this sub-optimality becomes significant: the selected neurons may leave substantial
+            residual error, and performance degrades much faster than the
+            <span class="highlight-qk">QK</span>/<span class="highlight-ov">OV</span>
+            SVD-based components.
+          </p>
+        </div>
+      </div>
+
+      <!-- Q3: Low-rank + quantization -->
+      <div class="oq-card">
+        <div class="oq-number">03</div>
+        <div class="oq-body">
+          <h4 class="oq-title">How far can joint low-rank decomposition and quantization go like QERA, CALDERA, SLiM, OATS?</h4>
+          <p class="is-size-5">
+            A<sup>3</sup> combined with HQQ 4-bit quantization can push the
+            compression Pareto frontier beyond what either technique achieves alone. But the combination is currently
+            quite simple: A<sup>3</sup> compress weight, then quantize the compressed weights.
+          </p>
+          <p class="is-size-5" style="margin-top:10px;">
+            There are advanced methods that explore better ways to combine low-rank + quantization. 
+            <a href="https://github.com/ChengZhang-98/QERA" target="_blank">QERA</a>
+            reconstructs quantisation error with a low-rank correction;
+            <a href="https://github.com/pilancilab/caldera" target="_blank">CALDERA</a>
+            decomposes weights into a quantised plus low-rank sum;
+            <a href="https://github.com/Paramathic/slim" target="_blank">SLiM</a>
+            combines one-shot quantisation with sparse and low-rank components; and
+            <a href="https://github.com/stephenqz/OATS" target="_blank">OATS</a>
+            jointly handles outliers via sparse and low-rank decomposition.
+            How to effectively integrate A<sup>3</sup> with
+            these ideas is interesting too?
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+<!-- ===================== /OPEN QUESTIONS ===================== -->
+
+
+-->
+<!-- ===================== BIBTEX ===================== -->
+<section class="section" id="bibtex" style="margin-bottom:-20px;">
+  <div class="container is-max-desktop content">
+    <h2 class="title is-3">BibTeX</h2>
+    <pre><code>@inproceedings{wong2026a3,
+  title     = {{A$^3$}: an {A}nalytical Low-Rank {A}pproximation Framework for {A}ttention},
+  author    = {Wong, Jeffrey T.H. and Zhang, Cheng and Cao, Xinye and Gimenes, Pedro and
+               Bouganis, Christos-Savvas and Constantinides, George Anthony and
+               Luk, Wayne and Zhao, Yiren},
+  booktitle = {Proceedings of the 43rd International Conference on Machine Learning (ICML)},
+  year      = {2026},
+  url       = {https://arxiv.org/abs/2505.12942},
+}</code></pre>
+  </div>
+</section>
+<!-- ===================== /BIBTEX ===================== -->
+
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="footer" style="padding:16px 0 12px;">
+  <div class="container">
+    <p class="is-size-6" style="text-align:center;">
+      Website template inspired by
+      <a href="https://ah-miu.github.io/Dobi-SVD.page/" target="_blank">Dobi-SVD</a>
+      and <a href="https://github.com/nerfies/nerfies.github.io" target="_blank">Nerfies</a>.
+      The <code>bulma.min.css</code> is from
+      <a href="https://bulma.io" target="_blank">Bulma</a>.
+    </p>
+  </div>
+</footer>
+<!-- ===================== /FOOTER ===================== -->
+
+</body>
+</html>
